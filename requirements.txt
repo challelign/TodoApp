@@ -1,0 +1,36 @@
+fastapi
+uvicorn[standard]
+pydantic 
+sqlalchemy 
+databases 
+python-dotenv 
+requests 
+aiohttp 
+pytest 
+httpx 
+passlib[bcrypt]==1.7.4
+passlib[bcrypt]==4.3.0
+
+# """
+# fastapi: The core FastAPI framework.
+
+# uvicorn: ASGI server to serve the FastAPI app (supports hot reload).
+
+# pydantic: Data validation library that FastAPI uses for request and response models.
+
+# sqlalchemy: SQL ORM for database interactions (if you're using SQL databases like PostgreSQL, MySQL, or SQLite).
+
+# databases: For async database queries (used with SQLAlchemy or other databases).
+
+# python-dotenv: For loading environment variables from .env files (useful for secrets management).
+
+# requests: HTTP library for making requests (you may need it for API communication).
+
+# aiohttp: Asynchronous HTTP client/server library, useful for making HTTP requests in a non-blocking way.
+
+# pytest: For testing your FastAPI app.
+
+# httpx: HTTP client for asynchronous API requests.
+
+# passlib[bcrypt]: Used for hashing passwords (useful for user authentication).
+# """
