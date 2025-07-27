@@ -8,6 +8,7 @@ from starlette import status
 from database import SessionLocal, engine
 from models import models
 
+from .auth import get_current_user
 
 router = APIRouter(
     prefix="/todos",
@@ -30,6 +31,8 @@ def get_db():
 
 db_dependency = Annotated[Session, Depends(get_db)]
 
+
+user_dependency = Annotated[dict, Depends(get_current_user)]
 
 class TodoRequest(BaseModel):
     title: str = Field(
@@ -67,15 +70,19 @@ async def read_single_todo(
     )
 
 
-@router.post("", status_code=status.HTTP_201_CREATED)
-async def create_todo(todo_request: TodoRequest, db: db_dependency):
+@router.post("/", status_code=status.HTTP_201_CREATED)
+async def create_todo(todo_request: TodoRequest, db: db_dependency, user:user_dependency):
     # new_todo = models.Todos(
     #     title=todo_request.title,
     #     description=todo_request.description,
     #     priority=todo_request.priority,
     #     completed=todo_request.completed,
     # )
-    new_todo = models.Todos(**todo_request.dict())
+    
+    if user is None:
+         raise HTTPException(status_code=401, detail="Authentication Failed")
+        
+    new_todo = models.Todos(**todo_request.dict(), owner_id =user.get('id'))
     db.add(new_todo)
     db.commit()
     db.refresh(new_todo)
