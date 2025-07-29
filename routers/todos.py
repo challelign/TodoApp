@@ -99,27 +99,35 @@ async def create_todo(todo_request: TodoRequest, db: db_dependency, user:user_de
 async def update_todo(
     todo_request: TodoRequest,
     db: db_dependency,
+    user:user_dependency,
     todo_id: int = Path(..., todo_id="The ID of the todo to update", ge=1),
 ):
-    todo = db.query(models.Todos).filter(models.Todos.id == todo_id).first()
-    if todo is not None:
-        # option 1
-        # for key, value in todo_request.dict().items():
-        #     setattr(todo, key, value)
-        #
-        # option 2
-        todo.title = todo_request.title
-        todo.description = todo_request.description
-        todo.priority = todo_request.priority
-        todo.completed = todo_request.completed
-        #
-        db.commit()
-        db.refresh(todo)
-        return {"todo": todo}
-    raise HTTPException(
+    if user is None:
+        raise HTTPException(status_code=401, detail="Authentication Failed")
+    
+    todo = db.query(models.Todos).filter(models.Todos.id == todo_id).filter(models.Todos.owner_id == user.get('id')).first()
+    
+    if todo is None:
+        raise HTTPException(
         status_code=404,
-        detail=f"Todo with id {todo_id} not found",
-    )
+        detail=f"Todo with id {todo_id} not found",)
+        
+    # option 1
+    # for key, value in todo_request.dict().items():
+    #     setattr(todo, key, value)
+    #
+    # option 2
+    todo.title = todo_request.title
+    todo.description = todo_request.description
+    todo.priority = todo_request.priority
+    todo.completed = todo_request.completed
+    #
+    db.add(todo)
+    db.commit()
+    db.refresh(todo)
+    
+    return {"todo": todo}
+    
 
 
 @router.delete("/{todo_id}", status_code=status.HTTP_204_NO_CONTENT)
