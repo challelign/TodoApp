@@ -11,6 +11,8 @@ from jose import jwt, JWTError
 
 
 
+from config.load_dotenv import ALGORITHM, SECRET_KEY
+
 from database import SessionLocal
 from models.models import Users
 # app = FastAPI()
@@ -18,9 +20,7 @@ router = APIRouter(
     prefix="/auth",
     tags=['Auth']
 )
-# openssl rand -hex 32
-SECRET_KEY="1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p"
-ALGORITHM="HS256"
+
 
 
 bcrypt_context = CryptContext(schemes=['bcrypt'], deprecated="auto")
@@ -63,22 +63,23 @@ def authenticate_user (username:str, password:str, db):
     return user
 
 
-def create_access_token(username:str, user_id:int, expires_delta:timedelta):
-    encode = {'sub':username,'id':user_id}
+def create_access_token(username:str, user_id:int,role: str, expires_delta:timedelta):
+    encode = {'sub':username,'id':user_id,'role':role}
     expires = datetime.now(timezone.utc) + expires_delta
     encode.update({'exp':expires})
     return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
     
 
-
+# TO GET CURRENTLY LOGIN USER  return {'username':username, 'id':user_id}
 async def get_current_user(token:Annotated[str, Depends(oauth2_bearer)]):
     try:
         payload=jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username:str = payload.get('sub')
         user_id :int = payload.get('id')
-        if username is None or user_id  is None:
+        role :str = payload.get('role')
+        if username is None or user_id  is None or  role  is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate user")
-        return {'username':username, 'id':user_id}
+        return {'username':username, 'id':user_id, 'role':role}
     except JWTError:
         raise  HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate user")
             
@@ -109,7 +110,7 @@ async def login_for_access_token(form_data:Annotated[OAuth2PasswordRequestForm, 
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate user")
     
-    token = create_access_token(user.username,user.id,timedelta(minutes=20))
+    token = create_access_token(user.username,user.id,user.role,timedelta(minutes=20))
     
     return {
         "message": "Successfully token created",
