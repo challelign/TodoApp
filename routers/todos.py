@@ -126,21 +126,49 @@ async def update_todo(
     db.commit()
     db.refresh(todo)
     
-    return {"todo": todo}
+    return  {"message":"Updated todo","todo": todo}
     
 
 
 @router.delete("/{todo_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_todo(
     db: db_dependency,
+    user:user_dependency,
     todo_id: int = Path(..., todo_id="The ID of the todo to delete", ge=1),
 ):
-    todo = db.query(models.Todos).filter(models.Todos.id == todo_id).first()
-    if todo is not None:
-        db.delete(todo)
-        db.commit()
-        return
-    raise HTTPException(
+    if user is None:
+        raise HTTPException(status_code=401, detail="Authentication Failed")
+     
+    todo = db.query(models.Todos).filter(models.Todos.id == todo_id).filter(models.Todos.owner_id == user.get('id')).first()
+
+    if todo is None:
+         raise HTTPException(
         status_code=404,
         detail=f"Todo with id {todo_id} not found",
     )
+    db.delete(todo)
+    db.commit()
+    return  {"message":"Deleted todo","todo": todo}
+    
+    
+@router.delete("/{todo_id}", status_code=status.HTTP_200_OK)
+# @router.delete("/{todo_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_todo_performance_way(
+    db: db_dependency,
+    user:user_dependency,
+    todo_id: int = Path(..., todo_id="The ID of the todo to delete", ge=1),
+):
+    if user is None:
+        raise HTTPException(status_code=401, detail="Authentication Failed")
+     
+    todo = db.query(models.Todos).filter(models.Todos.id == todo_id).filter(models.Todos.owner_id == user.get('id')).first()
+
+    if todo is  None:      
+        raise HTTPException(
+        status_code=404,
+        detail=f"Todo with id {todo_id} not found",
+    ) 
+    db.query(models.Todos).filter(models.Todos.id == todo_id).filter(models.Todos.owner_id == user.get('id')).delete()
+    db.commit()
+    return  {"message":"Deleted todo","todo": todo}
+
